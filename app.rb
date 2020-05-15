@@ -11,11 +11,12 @@ require 'octokit'
 
 CLIENT_ID = ENV['CLIENT_ID']
 CLIENT_SECRET = ENV['CLIENT_SECRET']
+RUBY_ENV = ENV['RUBY_ENV'] || 'development'
 
 enable :sessions
 
 def authenticated?
-    session[:access_token]
+  session[:access_token]
 end
 
 get '/login' do
@@ -23,8 +24,11 @@ get '/login' do
 end
 
 get '/' do
-  gh_data = github_data()
-  erb :index, :locals => {:client_id => CLIENT_ID, :gh_data => gh_data}
+  unless authenticated?
+    redirect('/login')
+    return
+  end
+  erb :index, :locals => {:client_id => CLIENT_ID, :gh_data => github_data}
 end
 
 # Callback URL for Github Authentication. This gets a github oauth token
@@ -54,77 +58,80 @@ get '/callback' do
 end
 
 
-######################################
-# Other Methods
-######################################
-
-# Demonstrate examples of how to get Data using Octokit.rb
-# Example API data is from this example account: https://github.com/octocat
-def github_data
-  unless authenticated?
-    redirect('/login')
-    return
-  end
-  puts "session: #{session.to_s}"
-
-  client = Octokit::Client.new(access_token: session[:access_token])
-
-  # Create a hash for collecting our example data.
-  data = Hash.new
-
-  # Get various types of data using Octokit.rb
-
-  # User Data:
-  # User data is available via client.user. As long as you have be granted access
-  # to the 'user' scope, you can access any values given in this example API
-  # response: http://developer.github.com/v3/users/#response
-  data[:login] = client.user.login # => 'octocat'
-  data[:email] = client.user.email # => 'octocat@github.com'
-  data[:location] = client.user.location # => 'San Francisco'
-
+def repos_data(client, after = nil)
   query = <<-GRAPHQL
   query {
     viewer {
       login
     }
-    rubyVersion: repository(owner: "halkeye", name: "language-versions") {
-      object(expression: "master:.ruby-version") {
-        ... on Blob {
-           text
-         }
+    # organization(login: "halkeye") {
+    repositoryOwner(login: "halkeye") {
+      repositories(first:100, after: %s) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          node {
+            nameWithOwner
+            rubyVersion: object(expression: "HEAD:.ruby-version") {
+              ... on Blob {
+                text
+              }
+            }
+            nodeVersion: object(expression: "HEAD:.node-version") {
+              ... on Blob {
+                text
+              }
+            }
+          }
+        }
       }
     }
   }
   GRAPHQL
 
-  #response = client.post '/graphql', { query: query }.to_json
-  #ap response
+  response = client.post '/graphql', {
+    query: format(query, JSON.generate(after))
+  }.to_json
+  response[:data][:repositoryOwner][:repositories]
+end
 
-  return data
-
-  # Repository Data:
-  # Repository data is available via client.repository (for a specific repo)
-  # or client.repositories for the full list of repos. As long as you have been
-  # granted access to the 'repo' scope, you can access any values given in this
-  # example API response: http://developer.github.com/v3/repos/#response-1
-  #
-  # Get data from a specific repository, if that repository exists.
-  if client.repository?('octocat/Hello-World')
-    data[:repo_id] = client.repository('octocat/Hello-World').id
-    data[:repo_forks] = client.repository('octocat/Hello-World').forks_count
-    data[:repo_stars] = client.repository('octocat/Hello-World').stargazers_count
-    data[:repo_watchers] = client.repository('octocat/Hello-World').watchers_count
-    data[:repo_full_name] = client.repository('octocat/Hello-World').full_name
-    data[:repo_description] = client.repository('octocat/Hello-World').description
-    # Note: You can see all repo methods by printing client.repository('octocat/Hello-World').methods
+def github_data
+  gh_data = nil
+  if RUBY_ENV == 'development'
+    if File.exist?('gh_data.json')
+      File.open('gh_data.json','r') do |f|
+        return JSON.load f
+      end
+    end
   end
 
-  # Instantiate an array for storing repo names.
-  data[:repo_names] = Array.new
-  # Loop through all repositories and collect repo names.
-  client.repositories.each do |repo|
-    data[:repo_names] << repo.name
+  client = Octokit::Client.new(access_token: session[:access_token])
+
+  data = {}
+
+  has_next_page = true
+  end_cursor = nil
+
+  while has_next_page do
+    repos_data = repos_data(client, end_cursor)
+    has_next_page = repos_data[:pageInfo][:hasNextPage]
+    end_cursor = repos_data[:pageInfo][:endCursor]
+    repos_data[:edges].each do |edge|
+      if !edge[:node][:rubyVersion].nil?
+        data[edge[:node][:nameWithOwner]] = "Ruby #{edge[:node][:rubyVersion][:text].chomp}"
+      elsif !edge[:node][:nodeVersion].nil?
+        data[edge[:node][:nameWithOwner]] = "Node #{edge[:node][:nodeVersion][:text].chomp}"
+      end
+    end
   end
 
-  return data
+  if RUBY_ENV == 'development'
+    File.open('gh_data.json', 'w') do |f|
+      f.write(data.to_json)
+    end
+  end
+
+  data
 end
