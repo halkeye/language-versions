@@ -28,7 +28,7 @@ get '/' do
     redirect('/login')
     return
   end
-  erb :index, :locals => {:client_id => CLIENT_ID, :gh_data => github_data}
+  erb :index, :locals => {:client_id => CLIENT_ID, :github_data => github_data}
 end
 
 # Callback URL for Github Authentication. This gets a github oauth token
@@ -98,7 +98,6 @@ def repos_data(client, after = nil)
 end
 
 def github_data
-  gh_data = nil
   if RUBY_ENV == 'development'
     if File.exist?('gh_data.json')
       File.open('gh_data.json','r') do |f|
