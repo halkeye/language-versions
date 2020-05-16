@@ -21,12 +21,34 @@ CLIENT_SECRET = ENV['CLIENT_SECRET']
 CLIENT_TOKEN = ENV['CLIENT_TOKEN']
 APP_ENV = ENV['APP_ENV'] || 'development'
 
-disable :logging
 enable :sessions
+set :logging, false
 set :bind, '0.0.0.0'
 set :port, 3000
 
 use FilteredCommonLogger, ['/healthcheck']
+
+GRAPHQL_QUERY_ORGANIZATIONS = <<-GRAPHQL
+query { 
+  viewer { 
+    login
+    organizations(last: 100, after: %<after>s) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      edges {
+        node {
+          id
+          name
+          login
+          description   
+        }
+      }
+    }
+  }
+}
+GRAPHQL
 
 def healthchecker
   @healthchecker ||= SinatraHealthCheck::Checker.new
@@ -159,56 +181,34 @@ def repos_versions(type, login)
   end
 end
 
+def graphql_query(client, query, after = nil)
+  response = client.post '/graphql', {
+    :query => format(query, { after: JSON.generate(after) })
+  }.to_json
+
+  return response if response&.errors.nil?
+
+  response[:errors].each { |exception| raise exception&.message }
+
+end
+
 
 def organizations
   memoize_disk('organizations') do
     data = []
 
-    def graphql_query(client, after = nil)
-      query = <<-GRAPHQL
-      query { 
-        viewer { 
-          login
-          organizations(last: 100, after: %s) {
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            edges {
-              node {
-                id
-                name
-                login
-                description   
-              }
-            }
-          }
-        }
-      }
-      GRAPHQL
-    
-      response = client.post '/graphql', {
-        query: format(query, JSON.generate(after))
-      }.to_json
-      if response[:errors]
-        response[:errors].each do |exception|
-          raise Exception.new(exception[:message])
-        end
-      end
-      response[:data][:viewer]
-    end
-
     has_next_page = true
     end_cursor = nil
 
     while has_next_page do
-      org_data = graphql_query(client, end_cursor)
+      org_data = graphql_query(client, GRAPHQL_QUERY_ORGANIZATIONS, end_cursor)
+      org_data = org_data[:data][:viewer]
 
       if end_cursor.nil?
         data.push({
-          type: 'repositoryOwner',
-          name: org_data[:login],
-          login: org_data[:login]
+          :type => 'repositoryOwner',
+          :name => org_data[:login],
+          :login => org_data[:login]
         })
       end
 
@@ -217,10 +217,10 @@ def organizations
 
       org_data[:organizations][:edges].each do |edge|
         data.push({
-          type: 'organization',
-          name: edge[:node][:name],
-          login: edge[:node][:login],
-          description: edge[:node][:description]
+          :type => 'organization',
+          :name => edge[:node][:name],
+          :login => edge[:node][:login],
+          :description => edge[:node][:description]
         })
       end
     end
@@ -229,11 +229,11 @@ def organizations
 end
 
 def memoize_disk(name, &block)
-  filename = "#{name.to_s}.json"
+  filename = "#{name}.json"
   if APP_ENV == 'development'
     if File.exist?(filename)
-      File.open(filename,'r') do |f|
-        return JSON.load f
+      File.open(filename, 'r') do |f|
+        return JSON.parse(f.read, { :symbolize_names => true })
       end
     end
   end
