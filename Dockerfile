@@ -1,5 +1,5 @@
 FROM ruby:2.6.5
-LABEL maintainer="Gavin Mogna <docker@gavinmogan.com>"
+LABEL maintainer="Gavin Mogan <docker@gavinmogan.com>"
 ENV APP_ENV production
 
 RUN gem install bundler:2.1.4 && bundle config --global frozen 1
