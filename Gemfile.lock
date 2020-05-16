@@ -74,6 +74,7 @@ PLATFORMS
 
 DEPENDENCIES
   awesome_print
+  byebug
   json
   octokit
   pry

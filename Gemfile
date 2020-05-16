@@ -16,6 +16,7 @@ end
 
 group :development do
   gem 'awesome_print'
+  gem 'byebug'
   gem 'pry'
   gem 'pry-byebug'
   # gem 'rubocop', require: false
