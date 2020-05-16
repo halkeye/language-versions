@@ -124,6 +124,8 @@ def repos_versions(type, login)
           data[edge[:node][:nameWithOwner]] = "Ruby #{edge[:node][:rubyVersion][:text].chomp}"
         elsif !edge[:node][:nodeVersion].nil?
           data[edge[:node][:nameWithOwner]] = "Node #{edge[:node][:nodeVersion][:text].chomp}"
+        elsif !edge[:node][:toolVersions].nil?
+          data[edge[:node][:nameWithOwner]] = "Node #{edge[:node][:toolVersions][:text].chomp}"
         end
       end
     end

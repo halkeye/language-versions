@@ -21,6 +21,11 @@ GRAPHQL_QUERY_REPO_FILES = <<~GRAPHQL
                 text
               }
             }
+            toolVersions: object(expression: "HEAD:.tool-versions") {
+              ... on Blob {
+                text
+              }
+            }
           }
         }
       }
