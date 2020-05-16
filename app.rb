@@ -12,12 +12,17 @@ require 'pry'
 
 CLIENT_ID = ENV['CLIENT_ID']
 CLIENT_SECRET = ENV['CLIENT_SECRET']
+CLIENT_TOKEN = ENV['CLIENT_TOKEN']
 RUBY_ENV = ENV['RUBY_ENV'] || 'development'
 
 enable :sessions
 
 def authenticated?
-  session[:access_token]
+  CLIENT_TOKEN || client.session[:access_token]
+end
+
+def client
+  @client ||= Octokit::Client.new(access_token: CLIENT_TOKEN || session[:access_token])
 end
 
 get '/login' do
