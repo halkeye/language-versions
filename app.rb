@@ -8,6 +8,7 @@ require 'sinatra'
 require 'rest-client'
 require 'json'
 require 'octokit'
+require 'pry'
 
 CLIENT_ID = ENV['CLIENT_ID']
 CLIENT_SECRET = ENV['CLIENT_SECRET']
@@ -98,39 +99,44 @@ def repos_data(client, after = nil)
 end
 
 def github_data
+  memoize_disk('github_data') do
+    client = Octokit::Client.new(access_token: session[:access_token])
+
+    data = {}
+
+    has_next_page = true
+    end_cursor = nil
+
+    while has_next_page do
+      repos_data = repos_data(client, end_cursor)
+      has_next_page = repos_data[:pageInfo][:hasNextPage]
+      end_cursor = repos_data[:pageInfo][:endCursor]
+      repos_data[:edges].each do |edge|
+        if !edge[:node][:rubyVersion].nil?
+          data[edge[:node][:nameWithOwner]] = "Ruby #{edge[:node][:rubyVersion][:text].chomp}"
+        elsif !edge[:node][:nodeVersion].nil?
+          data[edge[:node][:nameWithOwner]] = "Node #{edge[:node][:nodeVersion][:text].chomp}"
+        end
+      end
+    end
+    data
+  end
+end
+
+def memoize_disk(name, &block)
+  filename = "#{name.to_s}.json"
   if RUBY_ENV == 'development'
-    if File.exist?('gh_data.json')
-      File.open('gh_data.json','r') do |f|
+    if File.exist?(filename)
+      File.open(filename,'r') do |f|
         return JSON.load f
       end
     end
   end
-
-  client = Octokit::Client.new(access_token: session[:access_token])
-
-  data = {}
-
-  has_next_page = true
-  end_cursor = nil
-
-  while has_next_page do
-    repos_data = repos_data(client, end_cursor)
-    has_next_page = repos_data[:pageInfo][:hasNextPage]
-    end_cursor = repos_data[:pageInfo][:endCursor]
-    repos_data[:edges].each do |edge|
-      if !edge[:node][:rubyVersion].nil?
-        data[edge[:node][:nameWithOwner]] = "Ruby #{edge[:node][:rubyVersion][:text].chomp}"
-      elsif !edge[:node][:nodeVersion].nil?
-        data[edge[:node][:nameWithOwner]] = "Node #{edge[:node][:nodeVersion][:text].chomp}"
-      end
-    end
-  end
-
+  data = yield block
   if RUBY_ENV == 'development'
-    File.open('gh_data.json', 'w') do |f|
+    File.open(filename, 'w') do |f|
       f.write(data.to_json)
     end
   end
-
   data
 end
