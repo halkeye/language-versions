@@ -8,7 +8,10 @@ require 'sinatra-health-check'
 require 'rest-client'
 require 'json'
 require 'octokit'
+
 require './lib/filtered_common_logger'
+require './lib/github_grqphql'
+
 begin
   require 'pry'
   require 'awesome_print'
@@ -28,27 +31,9 @@ set :port, 3000
 
 use FilteredCommonLogger, ['/healthcheck']
 
-GRAPHQL_QUERY_ORGANIZATIONS = <<-GRAPHQL
-query { 
-  viewer { 
-    login
-    organizations(last: 100, after: %<after>s) {
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      edges {
-        node {
-          id
-          name
-          login
-          description   
-        }
-      }
-    }
-  }
-}
-GRAPHQL
+def github_qraphql
+  @github_qraphql ||= GithubGraphql.new
+end
 
 def healthchecker
   @healthchecker ||= SinatraHealthCheck::Checker.new
@@ -122,51 +107,11 @@ def repos_versions(type, login)
   memoize_disk("repos_versions_#{type}_#{login}") do
     data = {}
 
-    def repos_data(type, login, client, after = nil)
-      query = <<-GRAPHQL
-      query {
-        #{type}(login: #{JSON.generate(login)}) {
-          repositories(first:100, after: #{JSON.generate(after)}) {
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            edges {
-              node {
-                nameWithOwner
-                rubyVersion: object(expression: "HEAD:.ruby-version") {
-                  ... on Blob {
-                    text
-                  }
-                }
-                nodeVersion: object(expression: "HEAD:.node-version") {
-                  ... on Blob {
-                    text
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      GRAPHQL
-    
-      response = client.post '/graphql', {
-        query: query
-      }.to_json
-      if response[:errors]
-        response[:errors].each do |exception|
-          raise Exception.new(exception[:message])
-        end
-      end
-      response[:data][type.to_sym][:repositories]
-    end    
-
     has_next_page = true
     end_cursor = nil
 
     while has_next_page do
-      repos_data = repos_data(type, login, client, end_cursor)
+      repos_data = github_qraphql.repos_files(client, type, login, end_cursor)
       has_next_page = repos_data[:pageInfo][:hasNextPage]
       end_cursor = repos_data[:pageInfo][:endCursor]
       repos_data[:edges].each do |edge|
@@ -181,16 +126,6 @@ def repos_versions(type, login)
   end
 end
 
-def graphql_query(client, query, after = nil)
-  response = client.post '/graphql', {
-    :query => format(query, { after: JSON.generate(after) })
-  }.to_json
-
-  return response if response&.errors.nil?
-
-  response[:errors].each { |exception| raise exception&.message }
-
-end
 
 
 def organizations
@@ -201,8 +136,7 @@ def organizations
     end_cursor = nil
 
     while has_next_page do
-      org_data = graphql_query(client, GRAPHQL_QUERY_ORGANIZATIONS, end_cursor)
-      org_data = org_data[:data][:viewer]
+      org_data = github_qraphql.orgs_list(client, end_cursor)
 
       if end_cursor.nil?
         data.push({
