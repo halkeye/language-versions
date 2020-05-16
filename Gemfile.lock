@@ -63,6 +63,7 @@ GEM
       rack (~> 2.0)
       rack-protection (= 2.0.8.1)
       tilt (~> 2.0)
+    sinatra-health-check (0.2.0)
     tilt (2.0.10)
     unf (0.1.4)
       unf_ext
@@ -80,6 +81,7 @@ DEPENDENCIES
   rest-client
   rspec
   sinatra
+  sinatra-health-check
 
 BUNDLED WITH
    2.1.4

@@ -4,6 +4,7 @@ require 'rubygems'
 require 'bundler/setup'
 
 require 'sinatra'
+require 'sinatra-health-check'
 require 'rest-client'
 require 'json'
 require 'octokit'
@@ -23,20 +24,16 @@ enable :sessions
 set :bind, '0.0.0.0'
 set :port, 3000
 
+def healthchecker
+  @healthchecker ||= SinatraHealthCheck::Checker.new
+end
+
 def authenticated?
   CLIENT_TOKEN || session[:access_token]
 end
 
 def client
   @client ||= Octokit::Client.new(access_token: CLIENT_TOKEN || session[:access_token])
-end
-
-get '/login' do
-  if authenticated?
-    redirect('/')
-    return
-  end
-  erb :'login', :locals => {:client_id => CLIENT_ID}
 end
 
 get '/' do
@@ -48,6 +45,19 @@ get '/' do
     :client_id => CLIENT_ID,
     :organizations => organizations
   }
+end
+
+get '/healthcheck' do
+  headers 'content-type' => 'application/json'
+  healthchecker.status.to_json
+end
+
+get '/login' do
+  if authenticated?
+    redirect('/')
+    return
+  end
+  erb :'login', :locals => {:client_id => CLIENT_ID}
 end
 
 get %r{/(?<type>(repositoryOwner|organization))/(?<repo>[a-zA-Z0-9_-]+)} do

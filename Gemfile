@@ -8,6 +8,7 @@ gem 'json'
 gem 'octokit'
 gem 'rest-client'
 gem 'sinatra'
+gem 'sinatra-health-check'
 
 group :test do
   gem 'rspec'
