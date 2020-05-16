@@ -116,6 +116,11 @@ def repos_versions
       response = client.post '/graphql', {
         query: format(query, JSON.generate(after))
       }.to_json
+      if response[:errors]
+        response[:errors].each do |exception|
+          raise Exception.new(exception[:message])
+        end
+      end
       response[:data][:repositoryOwner][:repositories]
     end    
 
