@@ -44,7 +44,9 @@ def authenticated?
 end
 
 def client
-  @client ||= Octokit::Client.new(access_token: CLIENT_TOKEN || session[:access_token])
+  @client ||= Octokit::Client.new(
+    :access_token => CLIENT_TOKEN || session[:access_token]
+  )
 end
 
 get '/' do
@@ -68,7 +70,9 @@ get '/login' do
     redirect('/')
     return
   end
-  erb :login, :locals => {:client_id => CLIENT_ID}
+  erb :login, :locals => {
+    :client_id => CLIENT_ID
+  }
 end
 
 get %r{/(?<type>(repositoryOwner|organization))/(?<repo>[a-zA-Z0-9_-]+)} do
@@ -82,19 +86,20 @@ get %r{/(?<type>(repositoryOwner|organization))/(?<repo>[a-zA-Z0-9_-]+)} do
   }
 end
 
-# Callback URL for Github Authentication. This gets a github oauth token
-# for use in acquiring API data. It's a bit manual and could be replaced with 
-# https://github.com/atmos/sinatra_auth_github, but it works well for now.
 get '/callback' do
   # Get temporary GitHub code...
   session_code = request.env['rack.request.query_hash']['code']
 
   # ... and POST it back to GitHub
-  result = RestClient.post('https://github.com/login/oauth/access_token',
-                          {:client_id => CLIENT_ID,
-                           :client_secret => CLIENT_SECRET,
-                           :code => session_code},
-                           :accept => :json)
+  result = RestClient.post(
+    'https://github.com/login/oauth/access_token',
+    {
+      :client_id => CLIENT_ID,
+      :client_secret => CLIENT_SECRET,
+      :code => session_code
+    },
+    accept => :json
+  )
 
   # Make the access token available across sessions.
   session[:access_token] = JSON.parse(result)['access_token']
