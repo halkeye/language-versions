@@ -8,6 +8,7 @@ require 'sinatra-health-check'
 require 'rest-client'
 require 'json'
 require 'octokit'
+require './lib/filtered_common_logger'
 begin
   require 'pry'
   require 'awesome_print'
@@ -20,9 +21,12 @@ CLIENT_SECRET = ENV['CLIENT_SECRET']
 CLIENT_TOKEN = ENV['CLIENT_TOKEN']
 APP_ENV = ENV['APP_ENV'] || 'development'
 
+disable :logging
 enable :sessions
 set :bind, '0.0.0.0'
 set :port, 3000
+
+use FilteredCommonLogger, ['/healthcheck']
 
 def healthchecker
   @healthchecker ||= SinatraHealthCheck::Checker.new
