@@ -3,22 +3,28 @@
 require 'rubygems'
 require 'bundler/setup'
 
-require 'awesome_print'
 require 'sinatra'
 require 'rest-client'
 require 'json'
 require 'octokit'
-require 'pry'
+begin
+  require 'pry'
+  require 'awesome_print'
+  Pry.config.print = proc { |output, value| output.puts value.ai }
+rescue LoadError => _e # rubocop:disable Lint/SuppressedException
+end
 
 CLIENT_ID = ENV['CLIENT_ID']
 CLIENT_SECRET = ENV['CLIENT_SECRET']
 CLIENT_TOKEN = ENV['CLIENT_TOKEN']
-RUBY_ENV = ENV['RUBY_ENV'] || 'development'
+APP_ENV = ENV['APP_ENV'] || 'development'
 
 enable :sessions
+set :bind, '0.0.0.0'
+set :port, 3000
 
 def authenticated?
-  CLIENT_TOKEN || client.session[:access_token]
+  CLIENT_TOKEN || session[:access_token]
 end
 
 def client
@@ -44,7 +50,7 @@ get '/' do
   }
 end
 
-get %r{/(?<type>(repositoryOwner|organization))/(?<repo>[a-zA-Z0-9-_]+)} do
+get %r{/(?<type>(repositoryOwner|organization))/(?<repo>[a-zA-Z0-9_-]+)} do
   unless authenticated?
     redirect('/login')
     return
@@ -210,7 +216,7 @@ end
 
 def memoize_disk(name, &block)
   filename = "#{name.to_s}.json"
-  if RUBY_ENV == 'development'
+  if APP_ENV == 'development'
     if File.exist?(filename)
       File.open(filename,'r') do |f|
         return JSON.load f
@@ -218,7 +224,7 @@ def memoize_disk(name, &block)
     end
   end
   data = yield block
-  if RUBY_ENV == 'development'
+  if APP_ENV == 'development'
     File.open(filename, 'w') do |f|
       f.write(data.to_json)
     end

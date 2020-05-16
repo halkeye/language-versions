@@ -4,7 +4,6 @@ source 'https://rubygems.org'
 
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
-gem 'awesome_print'
 gem 'json'
 gem 'octokit'
 gem 'rest-client'
@@ -14,7 +13,8 @@ group :test do
   gem 'rspec'
 end
 
-group :test, :development do
+group :development do
+  gem 'awesome_print'
   gem 'pry'
   gem 'pry-byebug'
   # gem 'rubocop', require: false
