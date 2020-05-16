@@ -26,6 +26,10 @@ def client
 end
 
 get '/login' do
+  if authenticated?
+    redirect('/')
+    return
+  end
   erb :'login', :locals => {:client_id => CLIENT_ID}
 end
 
@@ -36,7 +40,18 @@ get '/' do
   end
   erb :index, :locals => {
     :client_id => CLIENT_ID,
-    :github_data => github_data
+    :organizations => organizations
+  }
+end
+
+get '/(repositoryOwner|organization)/(\w+)' do |type, repo|
+  unless authenticated?
+    redirect('/login')
+    return
+  end
+  erb :repos, :locals => {
+    :client_id => CLIENT_ID,
+    :github_data => repos_versions(type, repo)
   }
 end
 
@@ -61,50 +76,48 @@ get '/callback' do
   redirect '/'
 end
 
-def repos_data(client, after = nil)
-  query = <<-GRAPHQL
-  query {
-    viewer {
-      login
-    }
-    # organization(login: "halkeye") {
-    repositoryOwner(login: "halkeye") {
-      repositories(first:100, after: %s) {
-        pageInfo {
-          hasNextPage
-          endCursor
+def repos_versions
+  memoize_disk('repos_versions') do
+    data = {}
+
+    def repos_data(client, after = nil)
+      query = <<-GRAPHQL
+      query {
+        viewer {
+          login
         }
-        edges {
-          node {
-            nameWithOwner
-            rubyVersion: object(expression: "HEAD:.ruby-version") {
-              ... on Blob {
-                text
-              }
+        # organization(login: "halkeye") {
+        repositoryOwner(login: "halkeye") {
+          repositories(first:100, after: %s) {
+            pageInfo {
+              hasNextPage
+              endCursor
             }
-            nodeVersion: object(expression: "HEAD:.node-version") {
-              ... on Blob {
-                text
+            edges {
+              node {
+                nameWithOwner
+                rubyVersion: object(expression: "HEAD:.ruby-version") {
+                  ... on Blob {
+                    text
+                  }
+                }
+                nodeVersion: object(expression: "HEAD:.node-version") {
+                  ... on Blob {
+                    text
+                  }
+                }
               }
             }
           }
         }
       }
-    }
-  }
-  GRAPHQL
-
-  response = client.post '/graphql', {
-    query: format(query, JSON.generate(after))
-  }.to_json
-  response[:data][:repositoryOwner][:repositories]
-end
-
-def github_data
-  memoize_disk('github_data') do
-    client = Octokit::Client.new(access_token: session[:access_token])
-
-    data = {}
+      GRAPHQL
+    
+      response = client.post '/graphql', {
+        query: format(query, JSON.generate(after))
+      }.to_json
+      response[:data][:repositoryOwner][:repositories]
+    end    
 
     has_next_page = true
     end_cursor = nil
@@ -125,7 +138,77 @@ def github_data
   end
 end
 
+
+def organizations
+  memoize_disk('organizations') do
+    data = []
+
+    def graphql_query(client, after = nil)
+      query = <<-GRAPHQL
+      query { 
+        viewer { 
+          login
+          organizations(last: 100, after: %s) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            edges {
+              node {
+                id
+                name
+                login
+                description   
+              }
+            }
+          }
+        }
+      }
+      GRAPHQL
+    
+      response = client.post '/graphql', {
+        query: format(query, JSON.generate(after))
+      }.to_json
+      if response[:errors]
+        response[:errors].each do |exception|
+          raise Exception.new(exception[:message])
+        end
+      end
+      response[:data][:viewer]
+    end
+
+    has_next_page = true
+    end_cursor = nil
+
+    while has_next_page do
+      org_data = graphql_query(client, end_cursor)
+
+      if end_cursor.nil?
+        data.push({
+          type: 'repositoryOwner',
+          name: org_data[:login],
+          login: org_data[:login]
+        })
+      end
+
+      has_next_page = org_data[:organizations][:pageInfo][:hasNextPage]
+      end_cursor = org_data[:organizations][:pageInfo][:endCursor]
+
+      org_data[:organizations][:edges].each do |edge|
+        data.push({
+          type: 'organization',
+          name: edge[:node][:name],
+          login: edge[:node][:login],
+          description: edge[:node][:description]
+        })
+      end
+    end
+    data
+  end
+end
+
 def memoize_disk(name, &block)
+  return yield block
   filename = "#{name.to_s}.json"
   if RUBY_ENV == 'development'
     if File.exist?(filename)

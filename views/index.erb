@@ -1,14 +1,11 @@
-<table>
-  <thead>
-    <tr>
-      <th>Repo Name</th>
-      <th>Version</th>
-    </tr>
-  </thead>
-  <% github_data.each do |repo_name, version| %>
-    <tr>
-      <td><%= repo_name %></td>
-      <td><%= version %></td>
-    </tr>
-  <% end %>
-</table>
+
+<ul>
+<% organizations.each do |organization| %>
+    <li>
+        <a href="/<%= organization[:type] %>/<%= organization[:login] %>">
+            <%= organization[:name] %>
+            <p><%= organization[:description] %></p>
+        </a>
+    </li>
+<% end %>
+</ul>
