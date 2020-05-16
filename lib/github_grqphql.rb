@@ -56,9 +56,9 @@ class GithubGraphql
     response = client.post '/graphql', {
       :query => format(query, opts)
     }.to_json
-  
+
     return response if response&.errors.nil?
-  
+
     response[:errors].each { |exception| raise exception&.message }
   end
 
@@ -80,7 +80,7 @@ class GithubGraphql
       client,
       GRAPHQL_QUERY_ORGANIZATIONS,
       {
-        :after => JSON.generate(after),
+        :after => JSON.generate(after)
       }
     )
     response[:data][:viewer]
