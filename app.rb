@@ -68,7 +68,7 @@ get '/login' do
     redirect('/')
     return
   end
-  erb :'login', :locals => {:client_id => CLIENT_ID}
+  erb :login, :locals => {:client_id => CLIENT_ID}
 end
 
 get %r{/(?<type>(repositoryOwner|organization))/(?<repo>[a-zA-Z0-9_-]+)} do
@@ -125,8 +125,6 @@ def repos_versions(type, login)
     data
   end
 end
-
-
 
 def organizations
   memoize_disk('organizations') do
