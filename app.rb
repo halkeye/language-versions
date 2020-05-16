@@ -44,14 +44,14 @@ get '/' do
   }
 end
 
-get '/(repositoryOwner|organization)/(\w+)' do |type, repo|
+get %r{/(?<type>(repositoryOwner|organization))/(?<repo>[a-zA-Z0-9-_]+)} do
   unless authenticated?
     redirect('/login')
     return
   end
   erb :repos, :locals => {
     :client_id => CLIENT_ID,
-    :github_data => repos_versions(type, repo)
+    :github_data => repos_versions(params[:type], params[:repo])
   }
 end
 
@@ -76,19 +76,15 @@ get '/callback' do
   redirect '/'
 end
 
-def repos_versions
-  memoize_disk('repos_versions') do
+def repos_versions(type, login)
+  memoize_disk("repos_versions_#{type}_#{login}") do
     data = {}
 
-    def repos_data(client, after = nil)
+    def repos_data(type, login, client, after = nil)
       query = <<-GRAPHQL
       query {
-        viewer {
-          login
-        }
-        # organization(login: "halkeye") {
-        repositoryOwner(login: "halkeye") {
-          repositories(first:100, after: %s) {
+        #{type}(login: #{JSON.generate(login)}) {
+          repositories(first:100, after: #{JSON.generate(after)}) {
             pageInfo {
               hasNextPage
               endCursor
@@ -114,21 +110,21 @@ def repos_versions
       GRAPHQL
     
       response = client.post '/graphql', {
-        query: format(query, JSON.generate(after))
+        query: query
       }.to_json
       if response[:errors]
         response[:errors].each do |exception|
           raise Exception.new(exception[:message])
         end
       end
-      response[:data][:repositoryOwner][:repositories]
+      response[:data][type.to_sym][:repositories]
     end    
 
     has_next_page = true
     end_cursor = nil
 
     while has_next_page do
-      repos_data = repos_data(client, end_cursor)
+      repos_data = repos_data(type, login, client, end_cursor)
       has_next_page = repos_data[:pageInfo][:hasNextPage]
       end_cursor = repos_data[:pageInfo][:endCursor]
       repos_data[:edges].each do |edge|
@@ -213,7 +209,6 @@ def organizations
 end
 
 def memoize_disk(name, &block)
-  return yield block
   filename = "#{name.to_s}.json"
   if RUBY_ENV == 'development'
     if File.exist?(filename)
