@@ -29,7 +29,10 @@ get '/' do
     redirect('/login')
     return
   end
-  erb :index, :locals => {:client_id => CLIENT_ID, :github_data => github_data}
+  erb :index, :locals => {
+    :client_id => CLIENT_ID,
+    :github_data => github_data
+  }
 end
 
 # Callback URL for Github Authentication. This gets a github oauth token
@@ -45,11 +48,6 @@ get '/callback' do
                            :client_secret => CLIENT_SECRET,
                            :code => session_code},
                            :accept => :json)
-  # example result:
-  # { 'access_token':'xxasdfasdf234234123dvadsfasdfas',
-  #   'token_type':'bearer',
-  #   'scope':'user:email'
-  # }
 
   # Make the access token available across sessions.
   session[:access_token] = JSON.parse(result)['access_token']
@@ -57,7 +55,6 @@ get '/callback' do
   # As soon as someone authenticates, we kick them to the home page.
   redirect '/'
 end
-
 
 def repos_data(client, after = nil)
   query = <<-GRAPHQL

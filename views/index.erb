@@ -1,30 +1,14 @@
-<html>
-  <head>
-    <!--
-    Basic CSS styles courtesy of 
-    GitHub Primer (https://primer.github.io/)
-    -->
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/primer@10.5.0/build/build.css">
-  </head>
-  <body>
-    <div class="p-4">
-      <div class="blankslate blankslate-narrow">
-        <p class="h1">Hey there,</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Repo Name</th>
-              <th>Version</th>
-            </tr>
-          </thead>
-          <% github_data.each do |repo_name, version| %>
-            <tr>
-              <td><%= repo_name %></td>
-              <td><%= version %></td>
-            </tr>
-          <% end %>
-        </table>
-      </div>
-    </div>
-  </body>
-</html>
+<table>
+  <thead>
+    <tr>
+      <th>Repo Name</th>
+      <th>Version</th>
+    </tr>
+  </thead>
+  <% github_data.each do |repo_name, version| %>
+    <tr>
+      <td><%= repo_name %></td>
+      <td><%= version %></td>
+    </tr>
+  <% end %>
+</table>
