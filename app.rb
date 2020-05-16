@@ -98,7 +98,7 @@ get '/callback' do
       :client_secret => CLIENT_SECRET,
       :code => session_code
     },
-    accept => :json
+    :accept => :json
   )
 
   # Make the access token available across sessions.
