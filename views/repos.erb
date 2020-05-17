@@ -1,14 +1,28 @@
-<table style="width: 100%">
-  <thead>
-    <tr>
-      <th>Repo Name</th>
-      <th>Version</th>
-    </tr>
-  </thead>
-  <% github_data.each do |repo_name, version| %>
-    <tr>
-      <td><%= repo_name %></td>
-      <td><%= version %></td>
-    </tr>
-  <% end %>
-</table>
+<style>
+  #repos table { width: 100%; }
+  #repos tr td:first-child { width: 1%; white-space: nowrap; }
+  #repos tr td { padding: 0.1em 1em 0.1em 0; }
+  #repos tr:nth-child(even) {background: #CCC; }
+  #repos tr:nth-child(odd) {background: #FFF; }
+  #repos thead { border-bottom: 1px solid black; }
+</style>
+<div id="repos">
+  <table>
+    <thead>
+      <tr>
+        <th>Repo Name</th>
+        <th>Tool</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <% github_data.each do |repo_name, tools| %>
+      <% tools.each do |tool, version| %>
+        <tr>
+          <td><%= repo_name %></td>
+          <td><%= tool %></td>
+          <td><%= version %></td>
+        </tr>
+      <% end %>
+    <% end %>
+  </table>
+</div>

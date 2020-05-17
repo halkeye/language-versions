@@ -120,13 +120,18 @@ def repos_versions(type, login)
       has_next_page = repos_data[:pageInfo][:hasNextPage]
       end_cursor = repos_data[:pageInfo][:endCursor]
       repos_data[:edges].each do |edge|
+        repo_tools = data[edge[:node][:nameWithOwner]] || {}
         if !edge[:node][:rubyVersion].nil?
-          data[edge[:node][:nameWithOwner]] = "Ruby #{edge[:node][:rubyVersion][:text].chomp}"
+          repo_tools[:ruby] = edge[:node][:rubyVersion][:text].chomp
         elsif !edge[:node][:nodeVersion].nil?
-          data[edge[:node][:nameWithOwner]] = "Node #{edge[:node][:nodeVersion][:text].chomp}"
+          repo_tools[:node] = edge[:node][:nodeVersion][:text].chomp
         elsif !edge[:node][:toolVersions].nil?
-          data[edge[:node][:nameWithOwner]] = "Node #{edge[:node][:toolVersions][:text].chomp}"
+          edge[:node][:toolVersions][:text].chomp.split("\n").each do |line|
+            tool, version = line.split(/\s+/)
+            repo_tools[tool.to_sym] = version
+          end
         end
+        data[edge[:node][:nameWithOwner]] = repo_tools
       end
     end
     data
