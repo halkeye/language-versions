@@ -62,7 +62,9 @@ end
 
 get '/healthcheck' do
   headers 'content-type' => 'application/json'
-  healthchecker.status.to_json
+  healthchecker.status.to_h.merge({
+    :version => ENV['GIT_COMMIT_REV'] || 'unknown'
+  }).to_json
 end
 
 get '/login' do
