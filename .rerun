@@ -1,3 +1,4 @@
 -i "views/*"
+-i "spec/*"
 --no-notify
 'ruby app.rb -o 0.0.0.0 -p 3000'

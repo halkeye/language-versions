@@ -10,7 +10,7 @@ require 'json'
 require 'octokit'
 
 require './lib/filtered_common_logger'
-require './lib/github_grqphql'
+require './lib/github_graphql'
 
 begin
   require 'pry'

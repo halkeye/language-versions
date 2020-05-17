@@ -44,7 +44,6 @@ GRAPHQL_QUERY_ORGANIZATIONS = <<~GRAPHQL
         }
         edges {
           node {
-            id
             name
             login
             description   
@@ -67,7 +66,7 @@ class GithubGraphql
     response[:errors].each { |exception| raise exception&.message }
   end
 
-  def repos_files(client, type, login, after)
+  def repos_files(client, type, login, after = nil)
     response = graphql_query(
       client,
       GRAPHQL_QUERY_REPO_FILES,
@@ -77,10 +76,25 @@ class GithubGraphql
         :type => type
       }
     )
+    response[:data][type.to_sym][:repositories][:edges] =
+      response[:data][type.to_sym][:repositories][:edges].select do |edge|
+        # throw away any repos that dont have a name for some reason
+        next false unless edge[:node][:nameWithOwner]
+
+        # throw away any repos that dont have any tools
+        next false unless (
+          edge[:node][:rubyVersion] ||
+          edge[:node][:nodeVersion] ||
+          edge[:node][:toolVersion]
+        )
+
+        true
+      end
+
     response[:data][type.to_sym][:repositories]
   end
 
-  def orgs_list(client, after)
+  def orgs_list(client, after = nil)
     response = graphql_query(
       client,
       GRAPHQL_QUERY_ORGANIZATIONS,

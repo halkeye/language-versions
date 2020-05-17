@@ -1,0 +1,79 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://api.github.com/graphql
+    body:
+      encoding: UTF-8
+      string: '{"query":"query { \n  viewer { \n    login\n    organizations(last:
+        100, after: null) {\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n      edges
+        {\n        node {\n          name\n          login\n          description   \n        }\n      }\n    }\n  }\n}\n"}'
+    headers:
+      Accept:
+      - application/vnd.github.v3+json
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Content-Type:
+      - application/json
+      Authorization:
+      - token <BEARER_TOKEN>
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Sun, 17 May 2020 23:04:47 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Status:
+      - 200 OK
+      Cache-Control:
+      - no-cache
+      X-Oauth-Scopes:
+      - read:org, repo
+      X-Accepted-Oauth-Scopes:
+      - repo
+      X-Github-Media-Type:
+      - github.v3; format=json
+      X-Ratelimit-Limit:
+      - '5000'
+      X-Ratelimit-Remaining:
+      - '4893'
+      X-Ratelimit-Reset:
+      - '1589758232'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      Vary:
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Github-Request-Id:
+      - 995A:76C3:D81811:1F84793:5EC1C30F
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        eyJkYXRhIjp7InZpZXdlciI6eyJsb2dpbiI6ImhhbGtleWUiLCJvcmdhbml6YXRpb25zIjp7InBhZ2VJbmZvIjp7Imhhc05leHRQYWdlIjpmYWxzZSwiZW5kQ3Vyc29yIjoiWTNWeWMyOXlPbll5T3BIT0E0Vk5hQT09In0sImVkZ2VzIjpbeyJub2RlIjp7Im5hbWUiOiJKZW5raW5zIiwibG9naW4iOiJqZW5raW5zY2kiLCJkZXNjcmlwdGlvbiI6IkplbmtpbnMgaXMgYW4gb3BlbiBzb3VyY2UgYXV0b21hdGlvbiBzZXJ2ZXIgd2l0aCBhbiB1bnBhcmFsbGVsZWQgcGx1Z2luIGVjb3N5c3RlbSB0byBzdXBwb3J0IHByYWN0aWNhbGx5IGV2ZXJ5IHRvb2wgYXMgcGFydCBvZiB5b3VyIGRlbGl2ZXJ5IHBpcGVsaW5lcyJ9fSx7Im5vZGUiOnsibmFtZSI6IktvZGUgS29hbiIsImxvZ2luIjoiS29kZUtvYW4iLCJkZXNjcmlwdGlvbiI6IiJ9fSx7Im5vZGUiOnsibmFtZSI6InNhbHR5c3RvcmllcyIsImxvZ2luIjoic2FsdHlzdG9yaWVzIiwiZGVzY3JpcHRpb24iOm51bGx9fSx7Im5vZGUiOnsibmFtZSI6IkVwaWMgR2FtZXMiLCJsb2dpbiI6IkVwaWNHYW1lcyIsImRlc2NyaXB0aW9uIjoiIn19LHsibm9kZSI6eyJuYW1lIjoiSmVua2lucyBJbmZyYSIsImxvZ2luIjoiamVua2lucy1pbmZyYSIsImRlc2NyaXB0aW9uIjoiUmVwb3NpdG9yaWVzIG93bmVkIGJ5IHRoZSBKZW5raW5zIHByb2plY3QgaW5mcmFzdHJ1Y3R1cmUgdGVhbSJ9fSx7Im5vZGUiOnsibmFtZSI6Imh1YjRqLXRlc3Qtb3JnIiwibG9naW4iOiJodWI0ai10ZXN0LW9yZyIsImRlc2NyaXB0aW9uIjpudWxsfX0seyJub2RlIjp7Im5hbWUiOiJHYXRzYnkiLCJsb2dpbiI6ImdhdHNieWpzIiwiZGVzY3JpcHRpb24iOiIifX0seyJub2RlIjp7Im5hbWUiOiJSaXNlIFBlb3BsZSIsImxvZ2luIjoiUmlzZVBlb3BsZUluYyIsImRlc2NyaXB0aW9uIjoiIn19LHsibm9kZSI6eyJuYW1lIjoiVG9vdCBDYWbDqSIsImxvZ2luIjoidG9vdGNhZmUiLCJkZXNjcmlwdGlvbiI6Ik1hc3RvZG9uIGluc3RhbmNlIGxvY2F0ZWQgYXQgdG9vdC5jYWZlIn19LHsibm9kZSI6eyJuYW1lIjoiY2ItZ21vZ2FuLXRlc3QiLCJsb2dpbiI6ImNiLWdtb2dhbi10ZXN0IiwiZGVzY3JpcHRpb24iOm51bGx9fSx7Im5vZGUiOnsibmFtZSI6IkdhdmluJ3MgSGVsbSBDaGFydHMiLCJsb2dpbiI6ImhhbGtleWUtaGVsbS1jaGFydHMiLCJkZXNjcmlwdGlvbiI6IiJ9fSx7Im5vZGUiOnsibmFtZSI6ImdhdmlubW9nYW4tZW52aXJvbm1lbnRzIiwibG9naW4iOiJnYXZpbm1vZ2FuLWVudmlyb25tZW50cyIsImRlc2NyaXB0aW9uIjpudWxsfX0seyJub2RlIjp7Im5hbWUiOiJoYWxrZXllLWRvY2tlciIsImxvZ2luIjoiaGFsa2V5ZS1kb2NrZXIiLCJkZXNjcmlwdGlvbiI6bnVsbH19LHsibm9kZSI6eyJuYW1lIjoiaGFsa2V5ZS1pbmZyYS1pcmNib3QtdGVzdCIsImxvZ2luIjoiaGFsa2V5ZS1pbmZyYS1pcmNib3QtdGVzdCIsImRlc2NyaXB0aW9uIjpudWxsfX1dfX19fQ==
+    http_version: null
+  recorded_at: Sun, 17 May 2020 23:04:47 GMT
+recorded_with: VCR 5.1.0
