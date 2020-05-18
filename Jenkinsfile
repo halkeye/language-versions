@@ -1,16 +1,8 @@
 #!/usr/bin/groovy
 @Library('github.com/halkeye/jenkins-shared-library@master') _
-pipeline {
-  agent {
-    docker 'ruby:2.6.5'
-  }
-  stages {
-    stage('Docker') {
-      steps {
-        buildDockerfile('halkeye/language-versions')
-      }
-    }
-
+buildDockerfile(
+  imageName:'halkeye/language-versions',
+  body: {
     stage('Install') {
       steps {
         sh("bundle install")
@@ -44,4 +36,4 @@ pipeline {
       }
     }
   }
-}
+)
