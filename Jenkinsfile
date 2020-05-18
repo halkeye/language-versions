@@ -6,7 +6,9 @@ pipeline {
   }
   stages {
     stage('Docker') {
-      buildDockerfile('halkeye/language-versions')
+      steps {
+        buildDockerfile('halkeye/language-versions')
+      }
     }
 
     stage('Install') {
@@ -30,7 +32,7 @@ pipeline {
         }
       }
     }
-    
+
     stage('Test') {
       steps {
         sh("bundle exec rspec --format progress --format RspecJunitFormatter --out rspec.xml")
