@@ -62,3 +62,7 @@ build-iPhoneSimulator/
 
 # End of https://www.gitignore.io/api/ruby
 *.json
+checkstyle-result.xml
+rspec.xml
+.direnv
+.envrc
