@@ -5,6 +5,8 @@ buildDockerfile('halkeye/language-versions', [:]) {
   docker.image("ruby:${rubyVersion}").inside {
     try {
     sh '''
+      export HOME=$WORKSPACE
+      gem install bundler:2.1.4 && bundle config --global frozen 1
       bundle install
       bundle exec rubocop \
         --require rubocop/formatter/checkstyle_formatter \
@@ -13,7 +15,7 @@ buildDockerfile('halkeye/language-versions', [:]) {
       bundle exec rspec --format progress --format RspecJunitFormatter --out rspec.xml
     '''
     } finally {
-      scanForIssues tool: checkStyle(pattern: 'checkstyle-result.xml')
+      publishIssues(issues:[scanForIssues(tool: checkStyle(pattern: 'checkstyle-result.xml'))])
       junit 'rspec.xml'
     }
   }
